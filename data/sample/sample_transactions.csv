@@ -1,0 +1,6 @@
+transaction_id,account_id,counterparty_account,amount,currency,timestamp,country,channel,risk_flag,notes
+TX-1001,AC-77821,AC-99002,9500,USD,2025-07-03T10:15:00Z,ID,mobile,high,Repeated transfers below manual review threshold
+TX-1002,AC-77821,AC-99003,9800,USD,2025-07-03T10:42:00Z,ID,mobile,high,Three rapid outgoing wires within one hour
+TX-1099,AC-55912,AC-11209,250,USD,2025-07-21T03:11:00Z,SG,atm,low,Single low-value cash withdrawal
+TX-1107,AC-99002,AC-77821,9400,USD,2025-07-22T13:02:00Z,MY,online,medium,Funds returned from newly opened account
+TX-1114,AC-77821,AC-66210,9700,USD,2025-07-24T11:54:00Z,TH,online,high,Pattern resembles smurfed mule account distribution

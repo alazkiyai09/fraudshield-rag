@@ -1,0 +1,10 @@
+Case 2025-Q3-214
+Analyst observed likely mule-account ring with hub account AC-77821. Incoming funds from newly opened accounts were distributed to three external destinations within 90 minutes. Transactions were repeatedly set between 9,400 and 9,900 USD.
+
+Control gaps:
+- Existing velocity rule triggers only after five transactions; ring performed four transfers per cycle.
+- Device fingerprint reused across two beneficiary accounts.
+
+Recommended action:
+- Apply enhanced due diligence to accounts opened in the last 14 days with immediate high-value outgoing wires.
+- Add typology rule for repeated near-threshold outbound transfers.

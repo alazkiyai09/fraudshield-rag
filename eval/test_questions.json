@@ -1,0 +1,17 @@
+[
+  {
+    "question": "What mule-account pattern is present in Q3 2025 activity?",
+    "ground_truth": "Multiple near-threshold transfers from a hub account to newly opened accounts in short windows indicate mule-account structuring.",
+    "contexts": [
+      "Case notes describe repeated transfers between 9,400 and 9,900 USD from account AC-77821 to multiple beneficiaries.",
+      "Transaction rows show rapid outgoing wires under manual-review thresholds."
+    ]
+  },
+  {
+    "question": "Which control gap allowed suspicious activity to continue?",
+    "ground_truth": "A velocity rule requiring five transactions was bypassed because the ring used four transfers per cycle.",
+    "contexts": [
+      "Existing velocity rule triggers only after five transactions; ring performed four transfers per cycle."
+    ]
+  }
+]
