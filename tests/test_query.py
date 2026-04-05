@@ -61,3 +61,26 @@ def test_query_supports_no_sources(client):
 
     assert response.status_code == 200
     assert response.json()["sources"] == []
+
+
+def test_query_rate_limit_returns_429(client, fake_settings, fake_vector_store):
+    fake_settings.api_key = "test-api-key"
+    fake_settings.rate_limit_query_per_minute = 1
+    fake_vector_store.records.append(
+        {
+            "content": "Fraud signal present",
+            "metadata": {"source": "case.txt"},
+            "score": 0.9,
+            "vector": [0.1, 0.2, 0.3],
+        }
+    )
+
+    headers = {
+        "X-API-Key": "test-api-key",
+        "X-Forwarded-For": "203.0.113.10",
+    }
+    first = client.post("/query", json={"question": "What happened?"}, headers=headers)
+    second = client.post("/query", json={"question": "What happened?"}, headers=headers)
+
+    assert first.status_code == 200
+    assert second.status_code == 429

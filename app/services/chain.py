@@ -1,5 +1,9 @@
+import logging
+
 from app.config import Settings
 from app.services.prompts import FRAUD_ANALYST_SYSTEM_PROMPT
+
+logger = logging.getLogger(__name__)
 
 
 class RAGChainService:
@@ -30,6 +34,7 @@ class RAGChainService:
             tokens_used = self._extract_tokens(response)
             return answer, tokens_used
         except Exception:
+            logger.exception("LLM invocation failed; returning fallback answer")
             return self._fallback_answer(question, chunks), None
 
     def _build_llm(self):
@@ -47,6 +52,7 @@ class RAGChainService:
                     temperature=0,
                 )
             except Exception:
+                logger.warning("Unable to initialize OpenAI chat model; falling back to deterministic response")
                 return None
 
         if provider == "anthropic":
@@ -55,12 +61,19 @@ class RAGChainService:
             try:
                 from langchain_anthropic import ChatAnthropic
 
+                kwargs = {
+                    "model": self.settings.llm_model,
+                    "api_key": self.settings.anthropic_api_key,
+                    "temperature": 0,
+                }
+                if self.settings.anthropic_base_url:
+                    kwargs["base_url"] = self.settings.anthropic_base_url
+
                 return ChatAnthropic(
-                    model=self.settings.llm_model,
-                    api_key=self.settings.anthropic_api_key,
-                    temperature=0,
+                    **kwargs,
                 )
             except Exception:
+                logger.warning("Unable to initialize Anthropic chat model; falling back to deterministic response")
                 return None
 
         return None

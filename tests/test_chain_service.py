@@ -101,11 +101,14 @@ def test_build_llm_openai_provider_with_mock_module(monkeypatch):
 
 
 def test_build_llm_anthropic_provider_with_mock_module(monkeypatch):
+    captured = {}
+
     class FakeChatAnthropic:
-        def __init__(self, model: str, api_key: str, temperature: int) -> None:
-            self.model = model
-            self.api_key = api_key
-            self.temperature = temperature
+        def __init__(self, model: str, api_key: str, temperature: int, base_url: str | None = None) -> None:
+            captured["model"] = model
+            captured["api_key"] = api_key
+            captured["temperature"] = temperature
+            captured["base_url"] = base_url
 
     monkeypatch.setitem(
         sys.modules,
@@ -113,14 +116,20 @@ def test_build_llm_anthropic_provider_with_mock_module(monkeypatch):
         types.SimpleNamespace(ChatAnthropic=FakeChatAnthropic),
     )
 
-    settings = Settings(llm_provider="anthropic", llm_model="claude-sonnet", anthropic_api_key="ant-key")
+    settings = Settings(
+        llm_provider="anthropic",
+        llm_model="claude-sonnet",
+        anthropic_api_key="ant-key",
+        anthropic_base_url="https://api.z.ai/api/anthropic",
+    )
     service = RAGChainService(settings)
     llm = service._build_llm()
 
     assert isinstance(llm, FakeChatAnthropic)
-    assert llm.model == "claude-sonnet"
-    assert llm.api_key == "ant-key"
-    assert llm.temperature == 0
+    assert captured["model"] == "claude-sonnet"
+    assert captured["api_key"] == "ant-key"
+    assert captured["temperature"] == 0
+    assert captured["base_url"] == "https://api.z.ai/api/anthropic"
 
 
 def test_generate_answer_falls_back_when_prompt_render_fails(monkeypatch):

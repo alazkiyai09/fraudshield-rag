@@ -12,6 +12,7 @@ from app.dependencies import (
     get_vector_store,
 )
 from app.main import app
+from app.rate_limit import rate_limiter
 from app.services.document_loader import DocumentLoaderService
 
 
@@ -104,8 +105,10 @@ def client(fake_settings: Settings, fake_vector_store: FakeVectorStore) -> Itera
     app.dependency_overrides[get_vector_store] = lambda: fake_vector_store
     app.dependency_overrides[get_retriever] = lambda: retriever
     app.dependency_overrides[get_rag_chain] = lambda: rag_chain
+    rate_limiter.clear()
 
     with TestClient(app) as test_client:
         yield test_client
 
+    rate_limiter.clear()
     app.dependency_overrides.clear()

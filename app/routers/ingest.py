@@ -1,17 +1,23 @@
 import json
+import logging
+from pathlib import PurePath
+import re
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 
 from app.config import Settings, get_settings
 from app.dependencies import get_document_loader, get_embedding_service, get_vector_store
 from app.models.response import IngestResponse
+from app.rate_limit import limit_ingest_requests
 from app.services.document_loader import DocumentLoaderService
 from app.services.embeddings import EmbeddingService, EmbeddingServiceUnavailable
 from app.services.vector_store import FraudVectorStore, VectorStoreError
 
 router = APIRouter(tags=["ingest"])
+logger = logging.getLogger(__name__)
 
 _ALLOWED_SOURCE_TYPES = {"pdf", "csv", "text"}
+_SAFE_FILENAME_RE = re.compile(r"[^A-Za-z0-9._-]+")
 
 
 def _parse_metadata(metadata_text: str | None) -> dict:
@@ -35,7 +41,17 @@ def _parse_metadata(metadata_text: str | None) -> dict:
     return parsed
 
 
-@router.post("/ingest", response_model=IngestResponse)
+def _sanitize_filename(filename: str | None) -> str:
+    candidate = PurePath(filename or "uploaded_file").name.strip() or "uploaded_file"
+    candidate = _SAFE_FILENAME_RE.sub("_", candidate).strip("._")
+    return candidate[:120] or "uploaded_file"
+
+
+@router.post(
+    "/ingest",
+    response_model=IngestResponse,
+    dependencies=[Depends(limit_ingest_requests)],
+)
 async def ingest_document(
     file: UploadFile = File(...),
     source_type: str = Form(...),
@@ -70,7 +86,7 @@ async def ingest_document(
 
     try:
         chunks = document_loader.load_and_chunk(
-            filename=file.filename or "uploaded_file",
+            filename=_sanitize_filename(file.filename),
             file_bytes=file_bytes,
             source_type=normalized_source_type,
             metadata=parsed_metadata,
@@ -89,15 +105,27 @@ async def ingest_document(
     try:
         vectors = embedding_service.embed_documents(chunk_texts)
     except EmbeddingServiceUnavailable as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+        logger.warning("Embedding service unavailable during ingest: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Embedding service unavailable.",
+        ) from exc
     except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+        logger.exception("Unexpected embedding failure during ingest")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Embedding generation failed.",
+        ) from exc
 
     try:
         chunks_created = vector_store.upsert_chunks(chunks=chunks, vectors=vectors)
         collection_size = vector_store.count()
     except VectorStoreError as exc:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+        logger.exception("Vector store write failed during ingest")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to store document chunks.",
+        ) from exc
 
     return IngestResponse(
         status="success",

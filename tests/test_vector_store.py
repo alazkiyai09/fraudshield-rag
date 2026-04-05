@@ -20,11 +20,13 @@ class FakeClientState:
         self.collections = set()
         self.points = []
         self.payload_indexes = []
+        self.init_kwargs = {}
 
 
 class FakeQdrantClient:
-    def __init__(self, host=None, port=None) -> None:
+    def __init__(self, **kwargs) -> None:
         self.state = GLOBAL_STATE
+        self.state.init_kwargs = kwargs
 
     def collection_exists(self, collection_name: str) -> bool:
         return collection_name in self.state.collections
@@ -43,6 +45,17 @@ class FakeQdrantClient:
         for idx, point in enumerate(self.state.points, start=1):
             rows.append(FakeResult(idx=idx, payload=point.payload, score=0.9 - (idx * 0.1)))
         return rows[:limit]
+
+    def query_points(self, collection_name: str, query, query_filter, limit: int, with_payload: bool):
+        return types.SimpleNamespace(
+            points=self.search(
+                collection_name=collection_name,
+                query_vector=query,
+                query_filter=query_filter,
+                limit=limit,
+                with_payload=with_payload,
+            )
+        )
 
     def count(self, collection_name: str, exact: bool):
         return types.SimpleNamespace(count=len(self.state.points))
@@ -142,3 +155,14 @@ def test_vector_store_rejects_mismatched_upsert_lengths(monkeypatch):
             chunks=[DocumentChunk(content="x", metadata={})],
             vectors=[],
         )
+
+
+def test_vector_store_initializes_local_mode(monkeypatch):
+    GLOBAL_STATE.init_kwargs = {}
+    install_fake_qdrant_modules(monkeypatch)
+
+    settings = Settings(qdrant_mode="local", qdrant_path="data/test-qdrant")
+    store = FraudVectorStore(settings=settings, vector_size=3)
+    store._ensure_client()
+
+    assert GLOBAL_STATE.init_kwargs == {"path": "data/test-qdrant"}

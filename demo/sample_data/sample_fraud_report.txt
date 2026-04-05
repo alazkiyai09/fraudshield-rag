@@ -1,0 +1,28 @@
+QUARTERLY FRAUD INVESTIGATION REPORT - Q3 2025
+Bank Rakyat Indonesia - Fraud Management Division
+
+EXECUTIVE SUMMARY:
+During Q3 2025, the fraud detection system flagged 1,247 suspicious transactions
+totaling IDR 15.3 billion. Of these, 342 were confirmed fraudulent.
+
+MULE ACCOUNT PATTERNS:
+Pattern 1 - Rapid Fund Cycling: Accounts showing >5 transactions within 24 hours
+with amounts just below the IDR 500M reporting threshold.
+
+Pattern 2 - Dormant Account Activation: 89 accounts that were inactive for 6+
+months suddenly received large deposits followed by immediate withdrawals.
+
+Pattern 3 - Structured Deposits (Smurfing): Multiple deposits of IDR 49M-49.9M
+across different branches to avoid single-transaction reporting requirements.
+
+INVESTIGATION FINDINGS:
+- 23 mule account networks identified, involving 156 individual accounts
+- Average mule account lifespan: 45 days
+- Primary channels: online banking (67%), mobile banking (23%), branch (10%)
+- Geographic concentration: Greater Jakarta (78%), Surabaya (12%)
+
+RECOMMENDATIONS:
+1. Lower monitoring threshold from IDR 50M to IDR 25M
+2. Implement velocity checks for new accounts (<30 days old)
+3. Cross-reference beneficial ownership data for corporate accounts
+4. Deploy real-time graph analysis for network detection

@@ -1,0 +1,11 @@
+transaction_id,date,amount,sender,receiver,type,description,risk_flag
+TXN-001,2025-07-15,49900,ACC-1001,ACC-9001,wire,"International wire transfer",high
+TXN-002,2025-07-15,49850,ACC-1001,ACC-9002,wire,"Business payment",high
+TXN-003,2025-07-16,12000,ACC-2001,ACC-8001,ach,"Payroll deposit",low
+TXN-004,2025-07-16,49990,ACC-3001,ACC-9001,wire,"Consulting fee",high
+TXN-005,2025-07-17,500,ACC-4001,ACC-7001,p2p,"Personal transfer",low
+TXN-006,2025-07-17,48000,ACC-1001,ACC-9003,wire,"Equipment purchase",medium
+TXN-007,2025-07-18,49750,ACC-5001,ACC-9001,wire,"Service payment",high
+TXN-008,2025-07-18,3500,ACC-6001,ACC-7002,ach,"Subscription renewal",low
+TXN-009,2025-07-19,49999,ACC-1001,ACC-9004,wire,"Vendor payment",high
+TXN-010,2025-07-19,25000,ACC-7001,ACC-8002,wire,"Real estate deposit",medium

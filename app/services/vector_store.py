@@ -25,8 +25,29 @@ class FraudVectorStore:
         except ImportError as exc:  # pragma: no cover
             raise VectorStoreError("qdrant-client is not installed.") from exc
 
+        client_kwargs: dict[str, object]
+        qdrant_mode = self.settings.normalized_qdrant_mode()
+
+        if qdrant_mode == "memory":
+            client_kwargs = {"location": ":memory:"}
+        elif qdrant_mode == "local":
+            client_kwargs = {"path": self.settings.qdrant_path}
+        elif qdrant_mode == "network":
+            if self.settings.qdrant_url:
+                client_kwargs = {"url": self.settings.qdrant_url}
+            else:
+                client_kwargs = {
+                    "host": self.settings.qdrant_host,
+                    "port": self.settings.qdrant_port,
+                    "https": self.settings.qdrant_https,
+                }
+            if self.settings.qdrant_api_key:
+                client_kwargs["api_key"] = self.settings.qdrant_api_key
+        else:
+            raise VectorStoreError(f"Unsupported QDRANT_MODE '{self.settings.qdrant_mode}'.")
+
         try:
-            self._client = QdrantClient(host=self.settings.qdrant_host, port=self.settings.qdrant_port)
+            self._client = QdrantClient(**client_kwargs)
             return self._client
         except Exception as exc:  # pragma: no cover
             raise VectorStoreError(f"Unable to initialize Qdrant client: {exc}") from exc
@@ -109,12 +130,11 @@ class FraudVectorStore:
         qdrant_filter = self._build_filter(filters)
 
         try:
-            results = client.search(
-                collection_name=self.settings.qdrant_collection,
+            results = self._search_points(
+                client=client,
                 query_vector=query_vector,
-                query_filter=qdrant_filter,
-                limit=top_k,
-                with_payload=True,
+                qdrant_filter=qdrant_filter,
+                top_k=top_k,
             )
         except Exception as exc:
             raise VectorStoreError(f"Failed vector search: {exc}") from exc
@@ -184,3 +204,37 @@ class FraudVectorStore:
         if not conditions:
             return None
         return qdrant_models.Filter(must=conditions)
+
+    def _search_points(self, client, query_vector: list[float], qdrant_filter, top_k: int):
+        if hasattr(client, "query_points"):
+            try:
+                result = client.query_points(
+                    collection_name=self.settings.qdrant_collection,
+                    query=query_vector,
+                    query_filter=qdrant_filter,
+                    limit=top_k,
+                    with_payload=True,
+                )
+            except TypeError:
+                result = client.query_points(
+                    collection_name=self.settings.qdrant_collection,
+                    query_vector=query_vector,
+                    query_filter=qdrant_filter,
+                    limit=top_k,
+                    with_payload=True,
+                )
+        else:
+            result = client.search(
+                collection_name=self.settings.qdrant_collection,
+                query_vector=query_vector,
+                query_filter=qdrant_filter,
+                limit=top_k,
+                with_payload=True,
+            )
+
+        points = getattr(result, "points", None)
+        if isinstance(points, list):
+            return points
+        if isinstance(result, list):
+            return result
+        return []

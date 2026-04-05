@@ -1,6 +1,10 @@
+import logging
+
 from app.config import Settings
 from app.services.embeddings import EmbeddingService
 from app.services.vector_store import FraudVectorStore
+
+logger = logging.getLogger(__name__)
 
 
 class CrossEncoderReranker:
@@ -19,6 +23,7 @@ class CrossEncoderReranker:
             self._model = CrossEncoder(self.model_name)
             return self._model
         except Exception:
+            logger.warning("Cross-encoder reranker unavailable; using vector similarity ordering")
             return None
 
     def rerank(self, question: str, candidates: list[dict], top_k: int) -> list[dict]:
@@ -33,6 +38,7 @@ class CrossEncoderReranker:
         try:
             scores = model.predict(pairs)
         except Exception:
+            logger.warning("Cross-encoder prediction failed; using vector similarity ordering")
             return sorted(candidates, key=lambda item: item.get("score", 0.0), reverse=True)[:top_k]
 
         reranked: list[dict] = []
